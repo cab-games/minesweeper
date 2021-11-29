@@ -491,22 +491,6 @@ function Minesweeper(A, Q, s) {
 		}
 	}
 	function X(Y) {
-		if (i > 0) {
-			j();
-			$.post("start.php", {key: r, s: Y});
-		}
-	}
-	function j() {
-		var Y = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-		var Z;
-		r = "";
-		for (var Z = 0; Z < 3; Z++) {
-			r += Y.charAt(Math.floor(Math.random() * Y.length));
-		}
-		r += 4 * (Math.floor(Math.random() * 225) + 25) + i;
-		for (var Z = 0; Z < 4; Z++) {
-			r += Y.charAt(Math.floor(Math.random() * Y.length));
-		}
 	}
 	function F() {
 		var aa;
@@ -604,61 +588,10 @@ function Minesweeper(A, Q, s) {
 		}
 		if (i > 0) {
 			ab = U.getTime();
-			if (!p) {
-				for (Z = 3; Z >= 0; Z--) {
-					if (ab <= A[Z][i - 1]) {
-						H(Z + 1, true);
-						ac = true;
-						break;
-					}
-				}
-				if (!ac && (i == 1 && ab <= 10 || i == 2 && ab <= 50 || i == 3 && ab <= 150)) {
-					H(1, false);
-				}
-			}
 			if (E.onWin) {
 				E.onWin(i, ab);
 			}
 		}
-	}
-	function H(ab, ae) {
-		var Y;
-		var Z, ac;
-		var aa = (new Date).getTime();
-		var ad;
-		switch (ab) {
-			case 1:
-				Y = "daily";
-				break;
-			case 2:
-				Y = "weekly";
-				break;
-			case 3:
-				Y = "monthly";
-				break;
-			case 4:
-				Y = "all-time";
-				break;
-			default:
-				Y = "";
-				break;
-		}
-		ac = O() && !!localStorage.name ? localStorage.name : "";
-		if (ae) {
-			Z = prompt(U.getTime() + " is a new " + Y + " high score! Please enter your name", ac);
-		} else {
-			Z = prompt("Please enter your name to submit your score (" + U.getTime() + ")", ac);
-		}
-		Z = $.trim(Z).substring(0, 25);
-		if (Z && O()) {
-			localStorage.name = Z;
-		}
-		ad = Math.round(((new Date).getTime() - aa) / 1e3);
-		$.post("win.php", {key: r, name: Z, time: U.getTime(), s: ad, i: ab, h: ae ? 1 : 0}, function (af) {
-			if (ae && E.onNewHighScore) {
-				E.onNewHighScore(ab);
-			}
-		});
 	}
 	function O() {
 		try {
@@ -821,7 +754,6 @@ function Minesweeper(A, Q, s) {
 							R([square]);
 						}
 						if (!g) {
-							X(squareTypeId);
 							g = true;
 						}
 					}
@@ -905,7 +837,6 @@ function Minesweeper(A, Q, s) {
 								R([ah]);
 							}
 							if (!g) {
-								X(ag);
 								g = true;
 							}
 						}
