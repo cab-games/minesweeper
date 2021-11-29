@@ -1,1114 +1,982 @@
-'use strict';
-function Minesweeper(p, callback, error) {
-  function reset(width) {
-    $("#game-container, #game").width(width * (x * 16 + 20));
-    $("#game").height(width * (y * 16 + 30 + 26 + 6));
-  }
-  function on(n) {
-    return (n * x * 16 - 6 * Math.ceil(n * 13) - n * 2 * 6 - n * 26) / 2;
-  }
-  function setInterval() {
-    return y + "_" + x + "_" + count;
-  }
-  function draw() {
-    var startY;
-    var i;
-    var ctx = [];
-    var x = on(input);
-    ctx.push('<div class="bordertl"></div>');
-    i = 0;
-    for (; i < x; i++) {
-      ctx.push('<div class="bordertb"></div>');
-    }
-    ctx.push('<div class="bordertr"></div>');
-    ctx.push('<div class="borderlrlong"></div>', '<div class="time0" id="mines_hundreds"></div>', '<div class="time0" id="mines_tens"></div>', '<div class="time0" id="mines_ones"></div>', '<div class="facesmile" style="margin-left:', Math.floor(x), "px; margin-right: ", Math.ceil(x), 'px;" id="face"></div>', '<div class="time0" id="seconds_hundreds"></div>', '<div class="time0" id="seconds_tens"></div>', '<div class="time0" id="seconds_ones"></div>', '<div class="borderlrlong"></div>');
-    ctx.push('<div class="borderjointl"></div>');
-    i = 0;
-    for (; i < x; i++) {
-      ctx.push('<div class="bordertb"></div>');
-    }
-    ctx.push('<div class="borderjointr"></div>');
-    startY = 1;
-    for (; startY <= y; startY++) {
-      ctx.push('<div class="borderlr"></div>');
-      i = 1;
-      for (; i <= x; i++) {
-        ctx.push('<div class="square blank" id="', startY, "_", i, '"></div>');
-      }
-      ctx.push('<div class="borderlr"></div>');
-    }
-    ctx.push('<div class="borderbl"></div>');
-    i = 0;
-    for (; i < x; i++) {
-      ctx.push('<div class="bordertb"></div>');
-    }
-    ctx.push('<div class="borderbr"></div>');
-    i = 0;
-    for (; i <= x + 1; i++) {
-      ctx.push('<div class="square blank" style="display: none;" id="', 0, "_", i, '"></div>');
-    }
-    i = 0;
-    for (; i <= x + 1; i++) {
-      ctx.push('<div class="square blank" style="display: none;" id="', y + 1, "_", i, '"></div>');
-    }
-    startY = 1;
-    for (; startY <= y; startY++) {
-      ctx.push('<div class="square blank" style="display: none;" id="', startY, "_", 0, '"></div>');
-      ctx.push('<div class="square blank" style="display: none;" id="', startY, "_", x + 1, '"></div>');
-    }
-    $("#game").html(ctx.join(""));
-  }
-  function constructor(row, col) {
-    var key = 0;
-    var targetOffsetHeight = false;
-    var targetOffsetWidth = false;
-    var data = false;
-    this.addToValue = function(value) {
-      key = key + value;
-    };
-    this.isMine = function() {
-      return key < 0;
-    };
-    this.isFlagged = function() {
-      return targetOffsetHeight;
-    };
-    this.isMarked = function() {
-      return targetOffsetWidth;
-    };
-    this.isRevealed = function() {
-      return data;
-    };
-    this.isHidden = function() {
-      return row < 1 || row > y || col < 1 || col > x;
-    };
-    this.getRow = function() {
-      return row;
-    };
-    this.getCol = function() {
-      return col;
-    };
-    this.getValue = function() {
-      return key;
-    };
-    this.setRevealed = function(remoteData) {
-      data = remoteData;
-    };
-    this.plantMine = function() {
-      key = key - 10;
-      rooms[row - 1][col - 1].addToValue(1);
-      rooms[row - 1][col].addToValue(1);
-      rooms[row - 1][col + 1].addToValue(1);
-      rooms[row][col - 1].addToValue(1);
-      rooms[row][col + 1].addToValue(1);
-      rooms[row + 1][col - 1].addToValue(1);
-      rooms[row + 1][col].addToValue(1);
-      rooms[row + 1][col + 1].addToValue(1);
-    };
-    this.unplantMine = function() {
-      key = key + 10;
-      rooms[row - 1][col - 1].addToValue(-1);
-      rooms[row - 1][col].addToValue(-1);
-      rooms[row - 1][col + 1].addToValue(-1);
-      rooms[row][col - 1].addToValue(-1);
-      rooms[row][col + 1].addToValue(-1);
-      rooms[row + 1][col - 1].addToValue(-1);
-      rooms[row + 1][col].addToValue(-1);
-      rooms[row + 1][col + 1].addToValue(-1);
-    };
-    this.setClass = function(n) {
-      document.getElementById(row + "_" + col).className = n;
-    };
-    this.reveal1 = function() {
-      var roomKey;
-      var af;
-      var me;
-      var item;
-      var deadPool = [];
-      deadPool.push(this);
-      this.pushed = true;
-      for (; deadPool.length > 0;) {
-        me = deadPool.pop();
-        if (!me.isRevealed() && !me.isFlagged()) {
-          if (me.isMine()) {
-            return false;
-          } else {
-            if (!me.isFlagged()) {
-              me.setClass("square open" + me.getValue());
-              me.setRevealed(true);
-              if (!me.isHidden() && --workingBitsAvailable == 0) {
-                onLoad();
-                return true;
-              }
-              if (me.getValue() == 0 && !me.isHidden()) {
-                roomKey = -1;
-                for (; roomKey <= 1; roomKey++) {
-                  af = -1;
-                  for (; af <= 1; af++) {
-                    item = rooms[me.getRow() + roomKey][me.getCol() + af];
-                    if (!item.pushed && !item.isHidden() && !item.isRevealed()) {
-                      deadPool.push(item);
-                      item.pushed = true;
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-      start();
-      return true;
-    };
-    this.reveal9 = function() {
-      if (data) {
-        var roomKey;
-        var c;
-        var neighbor;
-        var oneKey = 0;
-        var children = [];
-        roomKey = -1;
-        for (; roomKey <= 1; roomKey++) {
-          c = -1;
-          for (; c <= 1; c++) {
-            neighbor = rooms[row + roomKey][col + c];
-            if (neighbor != this && neighbor.isFlagged()) {
-              oneKey++;
-            }
-          }
-        }
-        if (oneKey == key) {
-          roomKey = -1;
-          for (; roomKey <= 1; roomKey++) {
-            c = -1;
-            for (; c <= 1; c++) {
-              neighbor = rooms[row + roomKey][col + c];
-              if (neighbor != this && !neighbor.reveal1()) {
-                children.push(neighbor);
-              }
-            }
-          }
-          if (children.length > 0) {
-            set(children);
-          } else {
-            start();
-          }
-        }
-      }
-    };
-    this.flag = function(flagged) {
-      if (!data) {
-        if (targetOffsetHeight) {
-          if ($("#marks").attr("checked")) {
-            this.setClass("square question");
-            targetOffsetWidth = true;
-          } else {
-            this.setClass("square blank");
-            if (flagged) {
-              this._showFlagAnimation(true);
-            }
-          }
-          targetOffsetHeight = false;
-          skip++;
-          add();
-        } else {
-          if (targetOffsetWidth) {
-            this.setClass("square blank");
-            targetOffsetWidth = false;
-          } else {
-            this.setClass("square bombflagged");
-            targetOffsetHeight = true;
-            skip--;
-            add();
-            if (flagged) {
-              this._showFlagAnimation();
-            }
-          }
-        }
-        start();
-      }
-    };
-    this._showFlagAnimation = function(zoomAware) {
-      var pdfviewer = $("#" + row + "_" + col);
-      var anchorBoundingBoxViewport = pdfviewer.offset();
-      var star_left = anchorBoundingBoxViewport.left + pdfviewer.width() / 2;
-      var loadingOffsetHeight = anchorBoundingBoxViewport.top + pdfviewer.height() / 2;
-      var strip_width = 57 * input * 1.75;
-      var new_height = 79 * input * 1.75;
-      var style = {
-        left : star_left - strip_width / 2,
-        top : loadingOffsetHeight - new_height / 2,
-        width : strip_width + "px",
-        height : new_height + "px",
-        opacity : 0
-      };
-      var oldStyle = {
-        left : star_left,
-        top : loadingOffsetHeight,
-        width : 0,
-        height : 0,
-        opacity : 1
-      };
-      if (zoomAware) {
-        var newStyle = style;
-        style = oldStyle;
-        oldStyle = newStyle;
-      }
-      var $slide = $('<img src="flag.png" class="flag-animation"></div>').css(style);
-      $("body").append($slide);
-      setTimeout(function() {
-        $slide.css(oldStyle);
-      }, 0);
-      setTimeout(function() {
-        $slide.remove();
-      }, 500);
-    };
-    this.serializeToObj = function(array) {
-      if (array) {
-        if (!data && !targetOffsetHeight && !targetOffsetWidth) {
-          return key;
-        } else {
-          return [key, data ? 1 : 0, targetOffsetHeight ? 1 : 0, targetOffsetWidth ? 1 : 0];
-        }
-      } else {
-        return {
-          value : key,
-          isRevealed : data,
-          isFlagged : targetOffsetHeight,
-          isMarked : targetOffsetWidth
-        };
-      }
-    };
-    this.deserializeFromObj = function(target) {
-      key = target.value;
-      targetOffsetHeight = target.isFlagged;
-      targetOffsetWidth = target.isMarked;
-      data = target.isRevealed;
-    };
-  }
-  function get(failure) {
-    var i;
-    var j;
-    var x;
-    var item;
-    rooms = [];
-    obj = [];
-    data = [];
-    x = 0;
-    i = 0;
-    for (; i <= y + 1; i++) {
-      rooms[i] = [];
-      j = 0;
-      for (; j <= x + 1; j++) {
-        item = new constructor(i, j);
-        rooms[i][j] = item;
-        obj[i + "_" + j] = item;
-        if (!item.isHidden()) {
-          data[x++] = item;
-        }
-      }
-    }
-    if (failure) {
-      var result = failure.gridObj;
-      i = 0;
-      for (; i <= y + 1; i++) {
-        j = 0;
-        for (; j <= x + 1; j++) {
-          rooms[i][j].deserializeFromObj(result[i][j]);
-        }
-      }
-      data = [];
-      i = 0;
-      for (; i <= y + 1; i++) {
-        j = 0;
-        for (; j <= x + 1; j++) {
-          item = rooms[i][j];
-          if (!item.isHidden() && !item.isMine()) {
-            data.push(item);
-          }
-        }
-      }
-    } else {
-      x = 0;
-      for (; x < count; x++) {
-        data.splice(Math.floor(Math.random() * data.length), 1)[0].plantMine();
-      }
-    }
-  }
-  function prev(id) {
-    var s = [];
-    var i;
-    var j;
-    i = 0;
-    for (; i <= y + 1; i++) {
-      s[i] = [];
-      j = 0;
-      for (; j <= x + 1; j++) {
-        s[i][j] = rooms[i][j].serializeToObj(id);
-      }
-    }
-    return s;
-  }
-  function start() {
-    var end = prev();
-    level = {
-      gridObj : end
-    };
-  }
-  function remove(s) {
-    var nm = s.getRow();
-    var v = s.getCol();
-    var roomKey;
-    var 0101;
-    var gen;
-    var block;
-    var table;
-    if (!p && !parent) {
-      if (s.isMine()) {
-        data.splice(Math.floor(Math.random() * data.length), 1)[0].plantMine();
-        s.unplantMine();
-        data.push(s);
-      }
-      block = [];
-      var i = 0;
-      for (; i < data.length; i++) {
-        table = data[i];
-        if (table.getRow() < nm - 1 || table.getRow() > nm + 1 || table.getCol() < v - 1 || table.getCol() > v + 1) {
-          block.push(table);
-        }
-      }
-      roomKey = -1;
-      for (; roomKey <= 1; roomKey++) {
-        0101 = -1;
-        for (; 0101 <= 1; 0101++) {
-          gen = rooms[nm + roomKey][v + 0101];
-          if (gen.isMine() && block.length > 0) {
-            block.splice(Math.floor(Math.random() * block.length), 1)[0].plantMine();
-            gen.unplantMine();
-          }
-        }
-      }
-    }
-    player.start();
-    if (nm == 1 && v == 1 || nm == 1 && v == x || nm == y && v == 1 || nm == y && v == x) {
-      return 1;
-    } else {
-      if (nm == 1 || nm == y || v == 1 || v == x) {
-        return 2;
-      } else {
-        return 3;
-      }
-    }
-  }
-  function save_multiple(value) {
-    if (i > 0) {
-      genRandomID();
-      $.post("start.php", {
-        key : id,
-        s : value
-      });
-    }
-  }
-  function genRandomID() {
-    var possible = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
-    var Z;
-    id = "";
-    Z = 0;
-    for (; Z < 3; Z++) {
-      id = id + possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-    id = id + (4 * (Math.floor(Math.random() * 225) + 25) + i);
-    Z = 0;
-    for (; Z < 4; Z++) {
-      id = id + possible.charAt(Math.floor(Math.random() * possible.length));
-    }
-  }
-  function Player() {
-    function loop() {
-      var groupsize = (new Date).getTime();
-      var timeValue = time * 1E3;
-      var timeSubmittedDiff = groupsize - duedate;
-      var checkInterval = 1E3 - (timeSubmittedDiff - timeValue);
-      timer = setTimeout(loop, checkInterval);
-      time++;
-      reset();
-    }
-    function reset() {
-      var m = check(time);
-      document.getElementById("seconds_hundreds").className = "time" + m[0];
-      document.getElementById("seconds_tens").className = "time" + m[1];
-      document.getElementById("seconds_ones").className = "time" + m[2];
-    }
-    var duedate;
-    var time;
-    var timer;
-    this.start = function() {
-      duedate = (new Date).getTime() - time * 1E3;
-      loop();
-    };
-    this.stop = function() {
-      clearTimeout(timer);
-    };
-    this.getTime = function() {
-      return time;
-    };
-    this.setTime = function(sec) {
-      time = sec;
-      reset();
-    };
-  }
-  function add() {
-    var result = check(skip);
-    document.getElementById("mines_hundreds").className = "time" + result[0];
-    document.getElementById("mines_tens").className = "time" + result[1];
-    document.getElementById("mines_ones").className = "time" + result[2];
-  }
-  function check(a) {
-    a = Math.min(a, 999);
-    if (a >= 0) {
-      return [Math.floor(a / 100), Math.floor(a % 100 / 10), a % 10];
-    } else {
-      return ["-", Math.floor(-a % 100 / 10), -a % 10];
-    }
-  }
-  function set(array) {
-    var min;
-    var j;
-    var i;
-    var item;
-    document.getElementById("face").className = "facedead";
-    player.stop();
-    rewrite = true;
-    min = 1;
-    for (; min <= y; min++) {
-      j = 1;
-      columnloop: for (; j <= x; j++) {
-        item = rooms[min][j];
-        if (!item.isRevealed()) {
-          i = 0;
-          for (; i < array.length; i++) {
-            if (item == array[i]) {
-              item.setClass("square bombdeath");
-              continue columnloop;
-            }
-          }
-          if (item.isMine() && !item.isFlagged()) {
-            item.setClass("square bombrevealed");
-          } else {
-            if (!item.isMine() && item.isFlagged()) {
-              item.setClass("square bombmisflagged");
-            }
-          }
-        }
-      }
-    }
-  }
-  function onLoad() {
-    var min;
-    var j;
-    var cell;
-    var childKey;
-    var eventHandler;
-    var ac = false;
-    document.getElementById("face").className = "facewin";
-    player.stop();
-    rewrite = true;
-    skip = 0;
-    add();
-    min = 1;
-    for (; min <= y; min++) {
-      j = 1;
-      for (; j <= x; j++) {
-        cell = rooms[min][j];
-        if (!cell.isRevealed() && !cell.isFlagged()) {
-          cell.setClass("square bombflagged");
-        }
-      }
-    }
-    if (i > 0) {
-      eventHandler = player.getTime();
-      if (!p) {
-        childKey = 3;
-        for (; childKey >= 0; childKey--) {
-          if (eventHandler <= p[childKey][i - 1]) {
-            value(childKey + 1, true);
-            ac = true;
-            break;
-          }
-        }
-        if (!ac && (i == 1 && eventHandler <= 10 || i == 2 && eventHandler <= 50 || i == 3 && eventHandler <= 150)) {
-          value(1, false);
-        }
-      }
-      if (instance.onWin) {
-        instance.onWin(i, eventHandler);
-      }
-    }
-  }
-  function value(size, force) {
-    var item;
-    var path;
-    var url;
-    var aa = (new Date).getTime();
-    var fun_stack;
-    switch(size) {
-      case 1:
-        item = "daily";
-        break;
-      case 2:
-        item = "weekly";
-        break;
-      case 3:
-        item = "monthly";
-        break;
-      case 4:
-        item = "all-time";
-        break;
-      default:
-        item = "";
-        break;
-    }
-    url = supports_local_storage() && !!localStorage.name ? localStorage.name : "";
-    if (force) {
-      path = prompt(player.getTime() + " is a new " + item + " high score! Please enter your name", url);
-    } else {
-      path = prompt("Please enter your name to submit your score (" + player.getTime() + ")", url);
-    }
-    path = $.trim(path).substring(0, 25);
-    if (path && supports_local_storage()) {
-      localStorage.name = path;
-    }
-    fun_stack = Math.round(((new Date).getTime() - aa) / 1E3);
-    $.post("win.php", {
-      key : id,
-      name : path,
-      time : player.getTime(),
-      s : fun_stack,
-      i : size,
-      h : force ? 1 : 0
-    }, function(canCreateDiscussions) {
-      if (force && instance.onNewHighScore) {
-        instance.onNewHighScore(size);
-      }
-    });
-  }
-  function supports_local_storage() {
-    try {
-      return "localStorage" in window && window.localStorage !== null;
-    } catch (Y) {
-      return false;
-    }
-  }
-  function callback(marker) {
-    return marker.className.substring(0, 6) == "square";
-  }
-  function f(m) {
-    var b = {};
-    if (columnWidth) {
-      b.left = m.button == 1 || m.button == 3 || m.button == 4;
-      b.right = m.button == 2 || m.button == 3 || m.button == 4;
-    } else {
-      b.left = m.button == 0 || m.button == 1;
-      b.right = m.button == 2 || m.button == 1;
-    }
-    return b;
-  }
-  function fn(options, e, node) {
-    if (!options.isRevealed()) {
-      if (options.isMarked()) {
-        options.setClass(node);
-      } else {
-        if (!options.isFlagged()) {
-          options.setClass(e);
-        }
-      }
-    }
-  }
-  function run(model, params, cache) {
-    var roomKey;
-    var Z;
-    roomKey = -1;
-    for (; roomKey <= 1; roomKey++) {
-      Z = -1;
-      for (; Z <= 1; Z++) {
-        fn(rooms[model.getRow() + roomKey][model.getCol() + Z], params, cache);
-      }
-    }
-  }
-  function init() {
-    function handler(event) {
-      if (event.type === "touchmove" && !copyEventSimple(event)) {
-        return;
-      }
-      var a = get(event);
-      if (a != x && !companyId) {
-        if (now) {
-          if (x) {
-            run(obj[x.id], "square blank", "square question");
-          }
-          if (callback(a)) {
-            run(obj[a.id], "square open0", "square questionpressed");
-          }
-        } else {
-          if (x) {
-            fn(obj[x.id], "square blank", "square question");
-          }
-          if (callback(a)) {
-            fn(obj[a.id], "square open0", "square questionpressed");
-          }
-        }
-      }
-      x = callback(a) ? a : undefined;
-    }
-    function onLoad(event) {
-      if (event.type === "touchmove" && !copyEventSimple(event)) {
-        return;
-      }
-      var m = get(event);
-      document.getElementById("face").className = m.id == "face" ? "facepressed" : "facesmile";
-    }
-    function get(event) {
-      if (event.type === "touchmove" || event.type === "touchend") {
-        var touch = event.originalEvent.changedTouches[0];
-        return document.elementFromPoint(touch.clientX, touch.clientY);
-      } else {
-        return event.target;
-      }
-    }
-    function copyEventSimple(ev) {
-      if (!identifier) {
-        return false;
-      }
-      var 0 = ev.originalEvent.changedTouches[0].identifier === identifier;
-      return 0;
-    }
-    function render() {
-      if (!identifier) {
-        return;
-      }
-      identifier = null;
-      if (x) {
-        fn(obj[x.id], "square blank", "square question");
-        x = undefined;
-      }
-      if (!rewrite) {
-        document.getElementById("face").className = "facesmile";
-      }
-    }
-    var rePrase = false;
-    var x;
-    columnWidth = $.browser.msie && parseFloat($.browser.version) <= 7;
-    $(document).bind("gesturestart", function(canCreateDiscussions) {
-      new_tab = true;
-      render();
-    });
-    $(document).bind("gestureend", function(canCreateDiscussions) {
-      new_tab = false;
-    });
-    $(document).bind("scroll", render);
-    $(document).bind("touchstart", function(e) {
-      $(document).unbind("mousedown").unbind("mouseup");
-      if (identifier || new_tab) {
-        return;
-      }
-      identifier = e.originalEvent.changedTouches[0].identifier;
-      if (callback(e.target) && !rewrite) {
-        var u = identifier;
-        var v = e.target;
-        setTimeout(function() {
-          if (u === identifier && v === x) {
-            obj[v.id].flag(true);
-            identifier = null;
-            document.getElementById("face").className = "facesmile";
-          }
-        }, 500);
-        $(document).bind("touchmove", handler);
-        document.getElementById("face").className = "faceooh";
-        x = undefined;
-        handler(e);
-      } else {
-        if (e.target.id == "face") {
-          rePrase = true;
-          $(document).bind("touchmove", handler);
-          document.getElementById("face").className = "facepressed";
-        }
-      }
-    });
-    $(document).bind("touchend", function(ev) {
-      if (!copyEventSimple(ev)) {
-        return;
-      }
-      identifier = null;
-      $(document).unbind("touchmove", handler).unbind("touchmove", onLoad);
-      if (rePrase || !rewrite) {
-        document.getElementById("face").className = "facesmile";
-      }
-      var m = get(ev);
-      if (callback(m) && !rewrite) {
-        square = obj[m.id];
-        if (!g) {
-          squareTypeId = remove(square);
-        }
-        if (square.isRevealed()) {
-          square.reveal9();
-        } else {
-          if (square.isFlagged()) {
-            square.flag(true);
-          } else {
-            if (!square.reveal1()) {
-              set([square]);
-            }
-            if (!g) {
-              save_multiple(squareTypeId);
-              g = true;
-            }
-          }
-        }
-        ev.preventDefault();
-      } else {
-        if (m.id == "face" && rePrase) {
-          instance.newGame();
-        }
-      }
-      rePrase = false;
-    });
-    $(document).mousedown(function(e) {
-      var offset = f(e);
-      padding = offset.left || padding;
-      now = offset.right || now;
-      if (e.ctrlKey && callback(e.target) && !rewrite) {
-        obj[e.target.id].flag();
-        isMouseDownForCtrlClick = true;
-      } else {
-        if (padding) {
-          if (callback(e.target) && !rewrite) {
-            e.preventDefault();
-            $(document).bind("mousemove", handler);
-            document.getElementById("face").className = "faceooh";
-            x = undefined;
-            handler(e);
-          } else {
-            if (e.target.id == "face") {
-              e.preventDefault();
-              rePrase = true;
-              $(document).bind("mousemove", onLoad);
-              document.getElementById("face").className = "facepressed";
-            }
-          }
-        } else {
-          if (now) {
-            if (callback(e.target) && !rewrite) {
-              obj[e.target.id].flag();
-            }
-            return false;
-          }
-        }
-      }
-    });
-    $(document).on("contextmenu", function(jEvent) {
-      var user = $(jEvent.target);
-      if (user.is("#game") || user.closest("#game").length > 0) {
-        return;
-      }
-      now = false;
-    });
-    $(document).mouseup(function(param) {
-      var value = f(param);
-      var key;
-      var command;
-      if (isMouseDownForCtrlClick) {
-        padding = false;
-        now = false;
-        isMouseDownForCtrlClick = false;
-        return;
-      }
-      if (value.left) {
-        padding = false;
-        $(document).unbind("mousemove", handler).unbind("mousemove", onLoad);
-        if (rePrase || !rewrite) {
-          document.getElementById("face").className = "facesmile";
-        }
-        if (callback(param.target) && !rewrite) {
-          key = obj[param.target.id];
-          if (now) {
-            companyId = true;
-            run(obj[param.target.id], "square blank", "square question");
-            key.reveal9();
-          } else {
-            if (!companyId) {
-              if (!g) {
-                command = remove(key);
-              }
-              if (!key.reveal1()) {
-                set([key]);
-              }
-              if (!g) {
-                save_multiple(command);
-                g = true;
-              }
-            }
-            companyId = false;
-          }
-        } else {
-          if (param.target.id == "face" && rePrase) {
-            instance.newGame();
-          }
-        }
-        rePrase = false;
-      }
-      if (value.right) {
-        now = false;
-        if (callback(param.target) && !rewrite) {
-          if (padding) {
-            key = obj[param.target.id];
-            companyId = true;
-            run(key, "square blank", "square question");
-            key.reveal9();
-          } else {
-            companyId = false;
-          }
-          if (!rewrite) {
-            document.getElementById("face").className = "facesmile";
-          }
-        }
-      }
-    });
-    $(document).keydown(function(event) {
-      function update() {
-        var ah = window.navigator && window.navigator.platform && window.navigator.platform.toLowerCase().indexOf("mac") !== -1;
-        if (ah) {
-          return event.metaKey;
-        } else {
-          return event.ctrlKey;
-        }
-      }
-      if (event.which == 113) {
-        instance.newGame();
-      } else {
-        if (event.which == 32) {
-          if (hoveredSquareId && !rewrite) {
-            square = obj[hoveredSquareId];
-            if (square.isRevealed()) {
-              square.reveal9();
-            } else {
-              square.flag();
-            }
-          }
-          event.preventDefault();
-        } else {
-          if (event.which == 90 && !event.shiftKey && update()) {
-            if (document.getElementById("face").className == "facedead") {
-              instance.newGame(level);
-            }
-          }
-        }
-      }
-    });
-    $("#game").mouseover(function(credential) {
-      if (callback(credential.target)) {
-        hoveredSquareId = credential.target.id;
-      }
-    });
-    $("#game").mouseout(function(credential) {
-      if (callback(credential.target)) {
-        if (hoveredSquareId = credential.target.id) {
-          hoveredSquareId = "";
-        }
-      }
-    });
-  }
-  var instance = this;
-  var i;
-  var y;
-  var x;
-  var count;
-  var input;
-  var level;
-  var p;
-  var skip;
-  var workingBitsAvailable;
-  var rooms;
-  var obj;
-  var player = new Player;
-  var rewrite;
-  var g;
-  var data;
-  var id;
-  var columnWidth;
-  var companyId;
-  var padding;
-  var now;
-  var identifier;
-  var new_tab;
-  var parent;
-  init();
-  this.newGame = function(key, data) {
-    var j;
-    var name;
-    var self;
-    var a;
-    var isSupported;
-    var args;
-    a = setInterval();
-    args = callback();
-    i = args.gameTypeId;
-    y = args.numRows;
-    x = args.numCols;
-    count = args.numMines;
-    input = args.zoom;
-    if (data) {
-      if (typeof data.gameTypeId !== "undefined") {
-        i = data.gameTypeId;
-      }
-      if (typeof data.numRows !== "undefined") {
-        y = data.numRows;
-      }
-      if (typeof data.numCols !== "undefined") {
-        x = data.numCols;
-      }
-      if (typeof data.numMines !== "undefined") {
-        count = data.numMines;
-      }
-    }
-    isSupported = setInterval() != a;
-    reset(input);
-    if (isSupported) {
-      draw();
-    }
-    get(key);
-    start();
-    p = !!key;
-    skip = count;
-    workingBitsAvailable = y * x - count;
-    j = 1;
-    for (; j <= y; j++) {
-      name = 1;
-      for (; name <= x; name++) {
-        self = rooms[j][name];
-        if (self.isFlagged()) {
-          self.setClass("square bombflagged");
-          skip--;
-        } else {
-          if (self.isMarked()) {
-            self.setClass("square question");
-          } else {
-            if (self.isRevealed()) {
-              self.setClass("square open" + self.getValue());
-              if (!self.isHidden()) {
-                workingBitsAvailable--;
-              }
-            } else {
-              self.setClass("square blank");
-            }
-          }
-        }
-      }
-    }
-    player.stop();
-    if (!p) {
-      player.setTime(0);
-    } else {
-      if (data && typeof data.time !== "undefined") {
-        player.setTime(data.time);
-      } else {
-      }
-    }
-    add();
-    rewrite = false;
-    g = false;
-    companyId = false;
-    padding = false;
-    now = false;
-    isMouseDownForCtrlClick = false;
-    identifier = null;
-    new_tab = false;
-    parent = false;
-    $("#face")[0].className = "facesmile";
-    hoveredSquareId = "";
-  };
-  this.resize = function(name) {
-    var e = on(name);
-    reset(name);
-    $("#game-container").removeClass("z" + input * 100).addClass("z" + name * 100);
-    $("#face").css({
-      "margin-left" : Math.floor(e) + "px",
-      "margin-right" : Math.ceil(e) + "px"
-    });
-    input = name;
-  };
-  this.hasStartedPlaying = function() {
-    return g;
-  };
-  this.export_ = function() {
-    var end = prev(true);
-    var BOUNCE_BACK = player.getTime();
-    var data = {
-      version : 1,
-      gameTypeId : i,
-      numRows : y,
-      numCols : x,
-      numMines : count,
-      gridObj : end,
-      time : BOUNCE_BACK
-    };
-    parent = true;
-    return btoa(JSON.stringify(data));
-  };
-  this.isImportable = function(cloudSaveData) {
-    try {
-      var Riloadr = JSON.parse(atob(cloudSaveData));
-      return Riloadr.version === 1;
-    } catch (Z) {
-      return false;
-    }
-  };
-  this.import_ = function(cloudSaveData) {
-    var settings = JSON.parse(atob(cloudSaveData));
-    var pred;
-    var agent;
-    var result;
-    var new_state;
-    var b = [];
-    pred = 0;
-    for (; pred <= settings.numRows + 1; pred++) {
-      b[pred] = [];
-      agent = 0;
-      for (; agent <= settings.numCols + 1; agent++) {
-        result = settings.gridObj[pred][agent];
-        if (typeof result === "number") {
-          new_state = {
-            value : result,
-            isRevealed : false,
-            isFlagged : false,
-            isMarked : false
-          };
-        } else {
-          new_state = {
-            value : result[0],
-            isRevealed : result[1] === 1,
-            isFlagged : result[2] === 1,
-            isMarked : result[3] === 1
-          };
-        }
-        b[pred][agent] = new_state;
-      }
-    }
-    var level = {
-      gridObj : b
-    };
-    var message = {
-      gameTypeId : settings.gameTypeId,
-      numRows : settings.numRows,
-      numCols : settings.numCols,
-      numMines : settings.numMines,
-      time : settings.time
-    };
-    error({
-      gameTypeId : settings.gameTypeId,
-      numRows : settings.numRows,
-      numCols : settings.numCols,
-      numMines : settings.numMines
-    });
-    instance.newGame(level, message);
-  };
-}
-;
+function Minesweeper(A, Q, s) {
+	var E = this;
+	var i;
+	var B;
+	var a;
+	var m;
+	var N;
+	var o;
+	var p;
+	var K;
+	var G;
+	var I;
+	var c;
+	var U = new F;
+	var L;
+	var g;
+	var M;
+	var r;
+	var k;
+	var D;
+	var e;
+	var v;
+	var d;
+	var C;
+	var y;
+	P();
+	this.newGame = function (ae, Y) {
+		var af, ab;
+		var ad;
+		var aa, ac;
+		var Z;
+		aa = B + "_" + a + "_" + m;
+		Z = Q();
+		i = Z.gameTypeId;
+		B = Z.numRows;
+		a = Z.numCols;
+		m = Z.numMines;
+		N = Z.zoom;
+		if (Y) {
+			if (typeof Y.gameTypeId !== "undefined") {
+				i = Y.gameTypeId;
+			}
+			if (typeof Y.numRows !== "undefined") {
+				B = Y.numRows;
+			}
+			if (typeof Y.numCols !== "undefined") {
+				a = Y.numCols;
+			}
+			if (typeof Y.numMines !== "undefined") {
+				m = Y.numMines;
+			}
+		}
+		ac = B + "_" + a + "_" + m != aa;
+		w(N);
+		if (ac) {
+			V();
+		}
+		l(ae);
+		q();
+		p = !!ae;
+		K = m;
+		G = B * a - m;
+		for (af = 1; af <= B; af++) {
+			for (ab = 1; ab <= a; ab++) {
+				ad = I[af][ab];
+				if (ad.isFlagged()) {
+					ad.setClass("square bombflagged");
+					K--;
+				} else {
+					if (ad.isMarked()) {
+						ad.setClass("square question");
+					} else {
+						if (ad.isRevealed()) {
+							ad.setClass("square open" + ad.getValue());
+							if (!ad.isHidden()) {
+								G--;
+							}
+						} else {
+							ad.setClass("square blank");
+						}
+					}
+				}
+			}
+		}
+		U.stop();
+		if (!p) {
+			U.setTime(0);
+		} else {
+			if (Y && typeof Y.time !== "undefined") {
+				U.setTime(Y.time);
+			} else {}
+		}
+		W();
+		L = false;
+		g = false;
+		D = false;
+		e = false;
+		v = false;
+		isMouseDownForCtrlClick = false;
+		d = null;
+		C = false;
+		y = false;
+		$("#face")[0].className = "facesmile";
+		hoveredSquareId = "";
+	};
+	this.resize = function (Y) {
+		var Z = (Y * a * 16 - 6 * Math.ceil(Y * 13) - Y * 2 * 6 - Y * 26) / 2;
+		w(Y);
+		$("#game-container").removeClass("z" + N * 100).addClass("z" + Y * 100);
+		$("#face").css({"margin-left": Math.floor(Z) + "px", "margin-right": Math.ceil(Z) + "px"});
+		N = Y;
+	};
+	this.hasStartedPlaying = function () {
+		return g;
+	};
+	this.export_ = function () {
+		var aa = z(true);
+		var Z = U.getTime();
+		var Y = {version: 1, gameTypeId: i, numRows: B, numCols: a, numMines: m, gridObj: aa, time: Z};
+		y = true;
+		return btoa(JSON.stringify(Y));
+	};
+	this.isImportable = function (aa) {
+		try {
+			var Y = JSON.parse(atob(aa));
+			return Y.version === 1;
+		} catch (Z) {
+			return false;
+		}
+	};
+	this.import_ = function (ae) {
+		var aa = JSON.parse(atob(ae));
+		var ag, Z;
+		var af, ad;
+		var ac = [];
+		for (ag = 0; ag <= aa.numRows + 1; ag++) {
+			ac[ag] = [];
+			for (Z = 0; Z <= aa.numCols + 1; Z++) {
+				af = aa.gridObj[ag][Z];
+				if (typeof af === "number") {
+					ad = {value: af, isRevealed: false, isFlagged: false, isMarked: false};
+				} else {
+					ad = {value: af[0], isRevealed: af[1] === 1, isFlagged: af[2] === 1, isMarked: af[3] === 1};
+				}
+				ac[ag][Z] = ad;
+			}
+		}
+		var Y = {gridObj: ac};
+		var ab = {gameTypeId: aa.gameTypeId, numRows: aa.numRows, numCols: aa.numCols, numMines: aa.numMines, time: aa.time};
+		s({gameTypeId: aa.gameTypeId, numRows: aa.numRows, numCols: aa.numCols, numMines: aa.numMines});
+		E.newGame(Y, ab);
+	};
+	function w(Y) {
+		$("#game-container, #game").width(Y * (a * 16 + 20));
+		$("#game").height(Y * (B * 16 + 30 + 26 + 6));
+	}
+	function V() {
+		var ab, Y;
+		var Z = [];
+		var aa = (N * a * 16 - 6 * Math.ceil(N * 13) - N * 2 * 6 - N * 26) / 2;
+		Z.push('<div class="bordertl"></div>');
+		for (Y = 0; Y < a; Y++) {
+			Z.push('<div class="bordertb"></div>');
+		}
+		Z.push('<div class="bordertr"></div>');
+		Z.push('<div class="borderlrlong"></div>', '<div class="time0" id="mines_hundreds"></div>', '<div class="time0" id="mines_tens"></div>', '<div class="time0" id="mines_ones"></div>', '<div class="facesmile" style="margin-left:', Math.floor(aa), "px; margin-right: ", Math.ceil(aa), 'px;" id="face"></div>', '<div class="time0" id="seconds_hundreds"></div>', '<div class="time0" id="seconds_tens"></div>', '<div class="time0" id="seconds_ones"></div>', '<div class="borderlrlong"></div>');
+		Z.push('<div class="borderjointl"></div>');
+		for (Y = 0; Y < a; Y++) {
+			Z.push('<div class="bordertb"></div>');
+		}
+		Z.push('<div class="borderjointr"></div>');
+		for (ab = 1; ab <= B; ab++) {
+			Z.push('<div class="borderlr"></div>');
+			for (Y = 1; Y <= a; Y++) {
+				Z.push('<div class="square blank" id="', ab, "_", Y, '"></div>');
+			}
+			Z.push('<div class="borderlr"></div>');
+		}
+		Z.push('<div class="borderbl"></div>');
+		for (Y = 0; Y < a; Y++) {
+			Z.push('<div class="bordertb"></div>');
+		}
+		Z.push('<div class="borderbr"></div>');
+		for (Y = 0; Y <= a + 1; Y++) {
+			Z.push('<div class="square blank" style="display: none;" id="', 0, "_", Y, '"></div>');
+		}
+		for (Y = 0; Y <= a + 1; Y++) {
+			Z.push('<div class="square blank" style="display: none;" id="', B + 1, "_", Y, '"></div>');
+		}
+		for (ab = 1; ab <= B; ab++) {
+			Z.push('<div class="square blank" style="display: none;" id="', ab, "_", 0, '"></div>');
+			Z.push('<div class="square blank" style="display: none;" id="', ab, "_", a + 1, '"></div>');
+		}
+		$("#game").html(Z.join(""));
+	}
+	function u(ad, Z) {
+		var ab = 0;
+		var aa = false;
+		var Y = false;
+		var ac = false;
+		this.addToValue = function (ae) {
+			ab += ae;
+		};
+		this.isMine = function () {
+			return ab < 0;
+		};
+		this.isFlagged = function () {
+			return aa;
+		};
+		this.isMarked = function () {
+			return Y;
+		};
+		this.isRevealed = function () {
+			return ac;
+		};
+		this.isHidden = function () {
+			return ad < 1 || ad > B || Z < 1 || Z > a;
+		};
+		this.getRow = function () {
+			return ad;
+		};
+		this.getCol = function () {
+			return Z;
+		};
+		this.getValue = function () {
+			return ab;
+		};
+		this.setRevealed = function (ae) {
+			ac = ae;
+		};
+		this.plantMine = function () {
+			ab -= 10;
+			I[ad - 1][Z - 1].addToValue(1);
+			I[ad - 1][Z].addToValue(1);
+			I[ad - 1][Z + 1].addToValue(1);
+			I[ad][Z - 1].addToValue(1);
+			I[ad][Z + 1].addToValue(1);
+			I[ad + 1][Z - 1].addToValue(1);
+			I[ad + 1][Z].addToValue(1);
+			I[ad + 1][Z + 1].addToValue(1);
+		};
+		this.unplantMine = function () {
+			ab += 10;
+			I[ad - 1][Z - 1].addToValue(-1);
+			I[ad - 1][Z].addToValue(-1);
+			I[ad - 1][Z + 1].addToValue(-1);
+			I[ad][Z - 1].addToValue(-1);
+			I[ad][Z + 1].addToValue(-1);
+			I[ad + 1][Z - 1].addToValue(-1);
+			I[ad + 1][Z].addToValue(-1);
+			I[ad + 1][Z + 1].addToValue(-1);
+		};
+		this.setClass = function (ae) {
+			document.getElementById(ad + "_" + Z).className = ae;
+		};
+		this.reveal1 = function () {
+			var ae, af;
+			var ag, ah;
+			var ai = [];
+			ai.push(this);
+			this.pushed = true;
+			while (ai.length > 0) {
+				ag = ai.pop();
+				if (!ag.isRevealed() && !ag.isFlagged()) {
+					if (ag.isMine()) {
+						return false;
+					} else {
+						if (!ag.isFlagged()) {
+							ag.setClass("square open" + ag.getValue());
+							ag.setRevealed(true);
+							if (!ag.isHidden() && --G == 0) {
+								J();
+								return true;
+							}
+							if (ag.getValue() == 0 && !ag.isHidden()) {
+								for (ae = -1; ae <= 1; ae++) {
+									for (af = -1; af <= 1; af++) {
+										ah = I[ag.getRow() + ae][ag.getCol() + af];
+										if (!ah.pushed && !ah.isHidden() && !ah.isRevealed()) {
+											ai.push(ah);
+											ah.pushed = true;
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+			q();
+			return true;
+		};
+		this.reveal9 = function () {
+			if (ac) {
+				var af, ag;
+				var ah;
+				var ai = 0;
+				var ae = [];
+				for (af = -1; af <= 1; af++) {
+					for (ag = -1; ag <= 1; ag++) {
+						ah = I[ad + af][Z + ag];
+						if (ah != this && ah.isFlagged()) {
+							ai++;
+						}
+					}
+				}
+				if (ai == ab) {
+					for (af = -1; af <= 1; af++) {
+						for (ag = -1; ag <= 1; ag++) {
+							ah = I[ad + af][Z + ag];
+							if (ah != this && !ah.reveal1()) {
+								ae.push(ah);
+							}
+						}
+					}
+					if (ae.length > 0) {
+						R(ae);
+					} else {
+						q();
+					}
+				}
+			}
+		};
+		this.flag = function (ae) {
+			if (!ac) {
+				if (aa) {
+					if ($("#marks").attr("checked")) {
+						this.setClass("square question");
+						Y = true;
+					} else {
+						this.setClass("square blank");
+						if (ae) {
+							this._showFlagAnimation(true);
+						}
+					}
+					aa = false;
+					K++;
+					W();
+				} else {
+					if (Y) {
+						this.setClass("square blank");
+						Y = false;
+					} else {
+						this.setClass("square bombflagged");
+						aa = true;
+						K--;
+						W();
+						if (ae) {
+							this._showFlagAnimation();
+						}
+					}
+				}
+				q();
+			}
+		};
+		this._showFlagAnimation = function (af) {
+			var al = $("#" + ad + "_" + Z);
+			var ag = al.offset();
+			var aj = ag.left + al.width() / 2;
+			var ai = ag.top + al.height() / 2;
+			var ao = 57 * N * 1.75;
+			var ah = 79 * N * 1.75;
+			var ae = {left: aj - ao / 2, top: ai - ah / 2, width: ao + "px", height: ah + "px", opacity: 0};
+			var am = {left: aj, top: ai, width: 0, height: 0, opacity: 1};
+			if (af) {
+				var an = ae;
+				ae = am;
+				am = an;
+			}
+			var ak = $('<img src="flag.png" class="flag-animation"></div>').css(ae);
+			$("body").append(ak);
+			setTimeout(function () {
+				ak.css(am);
+			}, 0);
+			setTimeout(function () {
+				ak.remove();
+			}, 500);
+		};
+		this.serializeToObj = function (ae) {
+			if (ae) {
+				if (!ac && !aa && !Y) {
+					return ab;
+				} else {
+					return [ab, ac ? 1 : 0, aa ? 1 : 0, Y ? 1 : 0];
+				}
+			} else {
+				return {value: ab, isRevealed: ac, isFlagged: aa, isMarked: Y};
+			}
+		};
+		this.deserializeFromObj = function (ae) {
+			ab = ae.value;
+			aa = ae.isFlagged;
+			Y = ae.isMarked;
+			ac = ae.isRevealed;
+		};
+	}
+	function l(ab) {
+		var ad, Y, Z;
+		var aa;
+		I = [];
+		c = [];
+		M = [];
+		Z = 0;
+		for (ad = 0; ad <= B + 1; ad++) {
+			I[ad] = [];
+			for (Y = 0; Y <= a + 1; Y++) {
+				aa = new u(ad, Y);
+				I[ad][Y] = aa;
+				c[ad + "_" + Y] = aa;
+				if (!aa.isHidden()) {
+					M[Z++] = aa;
+				}
+			}
+		}
+		if (ab) {
+			var ac = ab.gridObj;
+			for (ad = 0; ad <= B + 1; ad++) {
+				for (Y = 0; Y <= a + 1; Y++) {
+					I[ad][Y].deserializeFromObj(ac[ad][Y]);
+				}
+			}
+			M = [];
+			for (ad = 0; ad <= B + 1; ad++) {
+				for (Y = 0; Y <= a + 1; Y++) {
+					aa = I[ad][Y];
+					if (!aa.isHidden() && !aa.isMine()) {
+						M.push(aa);
+					}
+				}
+			}
+		} else {
+			for (Z = 0; Z < m; Z++) {
+				M.splice(Math.floor(Math.random() * M.length), 1)[0].plantMine();
+			}
+		}
+	}
+	function z(Z) {
+		var aa = [];
+		var ab, Y;
+		for (ab = 0; ab <= B + 1; ab++) {
+			aa[ab] = [];
+			for (Y = 0; Y <= a + 1; Y++) {
+				aa[ab][Y] = I[ab][Y].serializeToObj(Z);
+			}
+		}
+		return aa;
+	}
+	function q() {
+		var Y = z();
+		o = {gridObj: Y};
+	}
+	function t(ag) {
+		var Y = ag.getRow();
+		var ae = ag.getCol();
+		var ad, Z;
+		var ac;
+		var af;
+		var aa;
+		if (!p && !y) {
+			if (ag.isMine()) {
+				M.splice(Math.floor(Math.random() * M.length), 1)[0].plantMine();
+				ag.unplantMine();
+				M.push(ag);
+			}
+			var af = [];
+			for (var ab = 0; ab < M.length; ab++) {
+				aa = M[ab];
+				if (aa.getRow() < Y - 1 || aa.getRow() > Y + 1 || aa.getCol() < ae - 1 || aa.getCol() > ae + 1) {
+					af.push(aa);
+				}
+			}
+			for (ad = -1; ad <= 1; ad++) {
+				for (Z = -1; Z <= 1; Z++) {
+					ac = I[Y + ad][ae + Z];
+					if (ac.isMine() && af.length > 0) {
+						af.splice(Math.floor(Math.random() * af.length), 1)[0].plantMine();
+						ac.unplantMine();
+					}
+				}
+			}
+		}
+		U.start();
+		if (Y == 1 && ae == 1 || Y == 1 && ae == a || Y == B && ae == 1 || Y == B && ae == a) {
+			return 1;
+		} else {
+			if (Y == 1 || Y == B || ae == 1 || ae == a) {
+				return 2;
+			} else {
+				return 3;
+			}
+		}
+	}
+	function X(Y) {
+		if (i > 0) {
+			j();
+			$.post("start.php", {key: r, s: Y});
+		}
+	}
+	function j() {
+		var Y = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+		var Z;
+		r = "";
+		for (var Z = 0; Z < 3; Z++) {
+			r += Y.charAt(Math.floor(Math.random() * Y.length));
+		}
+		r += 4 * (Math.floor(Math.random() * 225) + 25) + i;
+		for (var Z = 0; Z < 4; Z++) {
+			r += Y.charAt(Math.floor(Math.random() * Y.length));
+		}
+	}
+	function F() {
+		var aa;
+		var ab;
+		var ac;
+		function Z() {
+			var ag = (new Date).getTime();
+			var ad = ab * 1e3;
+			var af = ag - aa;
+			var ae = 1e3 - (af - ad);
+			ac = setTimeout(Z, ae);
+			ab++;
+			Y();
+		}
+		function Y() {
+			var ad = x(ab);
+			document.getElementById("seconds_hundreds").className = "time" + ad[0];
+			document.getElementById("seconds_tens").className = "time" + ad[1];
+			document.getElementById("seconds_ones").className = "time" + ad[2];
+		}
+		this.start = function () {
+			aa = (new Date).getTime() - ab * 1e3;
+			Z();
+		};
+		this.stop = function () {
+			clearTimeout(ac);
+		};
+		this.getTime = function () {
+			return ab;
+		};
+		this.setTime = function (ad) {
+			ab = ad;
+			Y();
+		};
+	}
+	function W() {
+		var Y = x(K);
+		document.getElementById("mines_hundreds").className = "time" + Y[0];
+		document.getElementById("mines_tens").className = "time" + Y[1];
+		document.getElementById("mines_ones").className = "time" + Y[2];
+	}
+	function x(Y) {
+		Y = Math.min(Y, 999);
+		if (Y >= 0) {
+			return [Math.floor(Y / 100), Math.floor(Y % 100 / 10), Y % 10];
+		} else {
+			return ["-", Math.floor(-Y % 100 / 10), -Y % 10];
+		}
+	}
+	function R(Y) {
+		var ac, Z, aa;
+		var ab;
+		document.getElementById("face").className = "facedead";
+		U.stop();
+		L = true;
+		for (ac = 1; ac <= B; ac++) {
+			columnloop: for (Z = 1; Z <= a; Z++) {
+				ab = I[ac][Z];
+				if (!ab.isRevealed()) {
+					for (aa = 0; aa < Y.length; aa++) {
+						if (ab == Y[aa]) {
+							ab.setClass("square bombdeath");
+							continue columnloop;
+						}
+					}
+					if (ab.isMine() && !ab.isFlagged()) {
+						ab.setClass("square bombrevealed");
+					} else {
+						if (!ab.isMine() && ab.isFlagged()) {
+							ab.setClass("square bombmisflagged");
+						}
+					}
+				}
+			}
+		}
+	}
+	function J() {
+		var ad, Y;
+		var aa;
+		var Z;
+		var ab;
+		var ac = false;
+		document.getElementById("face").className = "facewin";
+		U.stop();
+		L = true;
+		K = 0;
+		W();
+		for (ad = 1; ad <= B; ad++) {
+			for (Y = 1; Y <= a; Y++) {
+				aa = I[ad][Y];
+				if (!aa.isRevealed() && !aa.isFlagged()) {
+					aa.setClass("square bombflagged");
+				}
+			}
+		}
+		if (i > 0) {
+			ab = U.getTime();
+			if (!p) {
+				for (Z = 3; Z >= 0; Z--) {
+					if (ab <= A[Z][i - 1]) {
+						H(Z + 1, true);
+						ac = true;
+						break;
+					}
+				}
+				if (!ac && (i == 1 && ab <= 10 || i == 2 && ab <= 50 || i == 3 && ab <= 150)) {
+					H(1, false);
+				}
+			}
+			if (E.onWin) {
+				E.onWin(i, ab);
+			}
+		}
+	}
+	function H(ab, ae) {
+		var Y;
+		var Z, ac;
+		var aa = (new Date).getTime();
+		var ad;
+		switch (ab) {
+			case 1:
+				Y = "daily";
+				break;
+			case 2:
+				Y = "weekly";
+				break;
+			case 3:
+				Y = "monthly";
+				break;
+			case 4:
+				Y = "all-time";
+				break;
+			default:
+				Y = "";
+				break;
+		}
+		ac = O() && !!localStorage.name ? localStorage.name : "";
+		if (ae) {
+			Z = prompt(U.getTime() + " is a new " + Y + " high score! Please enter your name", ac);
+		} else {
+			Z = prompt("Please enter your name to submit your score (" + U.getTime() + ")", ac);
+		}
+		Z = $.trim(Z).substring(0, 25);
+		if (Z && O()) {
+			localStorage.name = Z;
+		}
+		ad = Math.round(((new Date).getTime() - aa) / 1e3);
+		$.post("win.php", {key: r, name: Z, time: U.getTime(), s: ad, i: ab, h: ae ? 1 : 0}, function (af) {
+			if (ae && E.onNewHighScore) {
+				E.onNewHighScore(ab);
+			}
+		});
+	}
+	function O() {
+		try {
+			return "localStorage" in window && window.localStorage !== null;
+		} catch (Y) {
+			return false;
+		}
+	}
+	function f(Z) {
+		var Y = {};
+		if (k) {
+			Y.left = Z.button == 1 || Z.button == 3 || Z.button == 4;
+			Y.right = Z.button == 2 || Z.button == 3 || Z.button == 4;
+		} else {
+			Y.left = Z.button == 0 || Z.button == 1;
+			Y.right = Z.button == 2 || Z.button == 1;
+		}
+		return Y;
+	}
+	function h(aa, Z, Y) {
+		if (!aa.isRevealed()) {
+			if (aa.isMarked()) {
+				aa.setClass(Y);
+			} else {
+				if (!aa.isFlagged()) {
+					aa.setClass(Z);
+				}
+			}
+		}
+	}
+	function b(ac, ab, aa) {
+		var Y, Z;
+		for (Y = -1; Y <= 1; Y++) {
+			for (Z = -1; Z <= 1; Z++) {
+				h(I[ac.getRow() + Y][ac.getCol() + Z], ab, aa);
+			}
+		}
+	}
+	function P() {
+		var aa = false;
+		var ac;
+		function Z(ag) {
+			if (ag.type === "touchmove" && !ae(ag)) {
+				return;
+			}
+			var af = Y(ag);
+			if (af != ac && !D) {
+				if (v) {
+					if (ac) {
+						b(c[ac.id], "square blank", "square question");
+					}
+					if (af.className.substring(0, 6) == "square") {
+						b(c[af.id], "square open0", "square questionpressed");
+					}
+				} else {
+					if (ac) {
+						h(c[ac.id], "square blank", "square question");
+					}
+					if (af.className.substring(0, 6) == "square") {
+						h(c[af.id], "square open0", "square questionpressed");
+					}
+				}
+			}
+			ac = af.className.substring(0, 6) == "square" ? af : undefined;
+		}
+		function ad(ag) {
+			if (ag.type === "touchmove" && !ae(ag)) {
+				return;
+			}
+			var af = Y(ag);
+			document.getElementById("face").className = af.id == "face" ? "facepressed" : "facesmile";
+		}
+		function Y(af) {
+			if (af.type === "touchmove" || af.type === "touchend") {
+				var ag = af.originalEvent.changedTouches[0];
+				return document.elementFromPoint(ag.clientX, ag.clientY);
+			} else {
+				return af.target;
+			}
+		}
+		function ae(af) {
+			if (!d) {
+				return false;
+			}
+			var ag = af.originalEvent.changedTouches[0].identifier === d;
+			return ag;
+		}
+		k = $.browser.msie && parseFloat($.browser.version) <= 7;
+		$(document).bind("gesturestart", function (af) {
+			C = true;
+			ab();
+		});
+		$(document).bind("gestureend", function (af) {
+			C = false;
+		});
+		$(document).bind("scroll", ab);
+		function ab() {
+			if (!d) {
+				return;
+			}
+			d = null;
+			if (ac) {
+				h(c[ac.id], "square blank", "square question");
+				ac = undefined;
+			}
+			if (!L) {
+				document.getElementById("face").className = "facesmile";
+			}
+		}
+		$(document).bind("touchstart", function (ah) {
+			$(document).unbind("mousedown").unbind("mouseup");
+			if (d || C) {
+				return;
+			}
+			d = ah.originalEvent.changedTouches[0].identifier;
+			if (ah.target.className.substring(0, 6) == "square" && !L) {
+				var ag = d;
+				var af = ah.target;
+				setTimeout(function () {
+					if (ag === d && af === ac) {
+						c[af.id].flag(true);
+						d = null;
+						document.getElementById("face").className = "facesmile";
+					}
+				}, 500);
+				$(document).bind("touchmove", Z);
+				document.getElementById("face").className = "faceooh";
+				ac = undefined;
+				Z(ah);
+			} else {
+				if (ah.target.id == "face") {
+					aa = true;
+					$(document).bind("touchmove", Z);
+					document.getElementById("face").className = "facepressed";
+				}
+			}
+		});
+		$(document).bind("touchend", function (ag) {
+			if (!ae(ag)) {
+				return;
+			}
+			d = null;
+			$(document).unbind("touchmove", Z).unbind("touchmove", ad);
+			if (aa || !L) {
+				document.getElementById("face").className = "facesmile";
+			}
+			var af = Y(ag);
+			if (af.className.substring(0, 6) == "square" && !L) {
+				square = c[af.id];
+				if (!g) {
+					squareTypeId = t(square);
+				}
+				if (square.isRevealed()) {
+					square.reveal9();
+				} else {
+					if (square.isFlagged()) {
+						square.flag(true);
+					} else {
+						if (!square.reveal1()) {
+							R([square]);
+						}
+						if (!g) {
+							X(squareTypeId);
+							g = true;
+						}
+					}
+				}
+				ag.preventDefault();
+			} else {
+				if (af.id == "face" && aa) {
+					E.newGame();
+				}
+			}
+			aa = false;
+		});
+		$(document).mousedown(function (ag) {
+			var af = f(ag);
+			e = af.left || e;
+			v = af.right || v;
+			if (ag.ctrlKey && ag.target.className.substring(0, 6) == "square" && !L) {
+				c[ag.target.id].flag();
+				isMouseDownForCtrlClick = true;
+			} else {
+				if (e) {
+					if (ag.target.className.substring(0, 6) == "square" && !L) {
+						ag.preventDefault();
+						$(document).bind("mousemove", Z);
+						document.getElementById("face").className = "faceooh";
+						ac = undefined;
+						Z(ag);
+					} else {
+						if (ag.target.id == "face") {
+							ag.preventDefault();
+							aa = true;
+							$(document).bind("mousemove", ad);
+							document.getElementById("face").className = "facepressed";
+						}
+					}
+				} else {
+					if (v) {
+						if (ag.target.className.substring(0, 6) == "square" && !L) {
+							c[ag.target.id].flag();
+						}
+						return false;
+					}
+				}
+			}
+		});
+		$(document).on("contextmenu", function (ag) {
+			var af = $(ag.target);
+			if (af.is("#game") || af.closest("#game").length > 0) {
+				return;
+			}
+			v = false;
+		});
+		$(document).mouseup(function (ai) {
+			var af = f(ai);
+			var ah;
+			var ag;
+			if (isMouseDownForCtrlClick) {
+				e = false;
+				v = false;
+				isMouseDownForCtrlClick = false;
+				return;
+			}
+			if (af.left) {
+				e = false;
+				$(document).unbind("mousemove", Z).unbind("mousemove", ad);
+				if (aa || !L) {
+					document.getElementById("face").className = "facesmile";
+				}
+				if (ai.target.className.substring(0, 6) == "square" && !L) {
+					ah = c[ai.target.id];
+					if (v) {
+						D = true;
+						b(c[ai.target.id], "square blank", "square question");
+						ah.reveal9();
+					} else {
+						if (!D) {
+							if (!g) {
+								ag = t(ah);
+							}
+							if (!ah.reveal1()) {
+								R([ah]);
+							}
+							if (!g) {
+								X(ag);
+								g = true;
+							}
+						}
+						D = false;
+					}
+				} else {
+					if (ai.target.id == "face" && aa) {
+						E.newGame();
+					}
+				}
+				aa = false;
+			}
+			if (af.right) {
+				v = false;
+				if (ai.target.className.substring(0, 6) == "square" && !L) {
+					if (e) {
+						ah = c[ai.target.id];
+						D = true;
+						b(ah, "square blank", "square question");
+						ah.reveal9();
+					} else {
+						D = false;
+					}
+					if (!L) {
+						document.getElementById("face").className = "facesmile";
+					}
+				}
+			}
+		});
+		$(document).keydown(function (ag) {
+			if (ag.which == 113) {
+				E.newGame();
+			} else {
+				if (ag.which == 32) {
+					if (hoveredSquareId && !L) {
+						square = c[hoveredSquareId];
+						if (square.isRevealed()) {
+							square.reveal9();
+						} else {
+							square.flag();
+						}
+					}
+					ag.preventDefault();
+				} else {
+					if (ag.which == 90 && !ag.shiftKey && af()) {
+						if (document.getElementById("face").className == "facedead") {
+							E.newGame(o);
+						}
+					}
+				}
+			}
+			function af() {
+				var ah = window.navigator && window.navigator.platform && window.navigator.platform.toLowerCase().indexOf("mac") !== -1;
+				if (ah) {
+					return ag.metaKey;
+				} else {
+					return ag.ctrlKey;
+				}
+			}
+		});
+		$("#game").mouseover(function (af) {
+			if (af.target.className.substring(0, 6) == "square") {
+				hoveredSquareId = af.target.id;
+			}
+		});
+		$("#game").mouseout(function (af) {
+			if (af.target.className.substring(0, 6) == "square") {
+				if (hoveredSquareId = af.target.id) {
+					hoveredSquareId = "";
+				}
+			}
+		});
+	}
+};
